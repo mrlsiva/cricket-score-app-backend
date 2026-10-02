@@ -1,0 +1,55 @@
+# Production-like stack: API + MySQL 8 + Redis (scale the API with: docker compose up --scale api=3 behind a load balancer).
+# Developed by Sling Groups
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://cricket:${DB_PASSWORD:-cricket_pass}@db:3306/cricket
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      AUTH_DEV_LOGIN: "false"
+      LOG_JSON: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: cricket
+      MYSQL_USER: cricket
+      MYSQL_PASSWORD: ${DB_PASSWORD:-cricket_pass}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_pass}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db:
+  redis:
+  uploads:

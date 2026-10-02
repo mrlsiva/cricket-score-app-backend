@@ -1,0 +1,1074 @@
+// Cricket Scoring & Tournament Management - Database Schema
+// Developed by Sling Groups
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── Enums ───────────────────────────────
+
+enum RoleName {
+  SUPER_ADMIN
+  ORGANIZER
+  SCORER
+  TEAM_CAPTAIN
+  TEAM_MANAGER
+  PLAYER
+  VIEWER
+}
+
+enum TournamentType {
+  LEAGUE
+  KNOCKOUT
+  LEAGUE_KNOCKOUT
+  FRIENDLY
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum BallType {
+  TENNIS
+  LEATHER
+  RUBBER
+  TAPE
+  OTHER
+}
+
+enum PitchType {
+  TURF
+  MATTING
+  CEMENT
+  ASTRO_TURF
+  MUD
+  OTHER
+}
+
+enum PlayerRole {
+  BATSMAN
+  BOWLER
+  ALL_ROUNDER
+  WICKET_KEEPER
+}
+
+enum BattingStyle {
+  RIGHT_HAND
+  LEFT_HAND
+}
+
+enum BowlingStyle {
+  FAST
+  MEDIUM_FAST
+  MEDIUM
+  OFF_SPIN
+  LEG_SPIN
+  LEFT_ARM_ORTHODOX
+  LEFT_ARM_WRIST_SPIN
+  NONE
+}
+
+enum BowlingArm {
+  RIGHT
+  LEFT
+}
+
+enum MembershipStatus {
+  ACTIVE
+  REMOVED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  TOSS_COMPLETED
+  LIVE
+  INNINGS_BREAK
+  COMPLETED
+  CANCELLED
+}
+
+enum TossDecision {
+  BAT
+  BOWL
+}
+
+enum MatchStage {
+  FRIENDLY
+  LEAGUE
+  KNOCKOUT
+  QUARTER_FINAL
+  SEMI_FINAL
+  FINAL
+}
+
+enum ResultType {
+  WIN
+  TIE
+  NO_RESULT
+  ABANDONED
+}
+
+enum WinMarginType {
+  RUNS
+  WICKETS
+  SUPER_OVER
+}
+
+enum InningsStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// DELIVERY = a ball bowled; PENALTY = penalty runs awarded; DISMISSAL = non-delivery
+/// dismissal (retired hurt / timed out); OVER_END = scorer forced end of a short over.
+enum BallKind {
+  DELIVERY
+  PENALTY
+  DISMISSAL
+  OVER_END
+}
+
+enum ExtraType {
+  NONE
+  WIDE
+  NO_BALL
+  BYE
+  LEG_BYE
+  PENALTY
+}
+
+enum WicketType {
+  BOWLED
+  CAUGHT
+  LBW
+  RUN_OUT
+  STUMPED
+  HIT_WICKET
+  RETIRED_HURT
+  TIMED_OUT
+}
+
+enum ScoreEventType {
+  MATCH_CREATED
+  TOSS_COMPLETED
+  MATCH_STARTED
+  INNINGS_STARTED
+  BALL_ADDED
+  BALL_EDITED
+  BALL_DELETED
+  BALL_UNDONE
+  STRIKER_CHANGED
+  BATSMEN_SET
+  BOWLER_CHANGED
+  OVER_ENDED
+  MATCH_PAUSED
+  MATCH_RESUMED
+  INNINGS_ENDED
+  SUPER_OVER_STARTED
+  MATCH_ENDED
+  RESULT_OVERRIDDEN
+  SCORER_CHANGED
+}
+
+enum CommentaryType {
+  BALL
+  BOUNDARY
+  SIX
+  WICKET
+  MILESTONE
+  PARTNERSHIP
+  OVER_SUMMARY
+  INNINGS_SUMMARY
+  MATCH_SUMMARY
+  MANUAL
+}
+
+enum AwardScope {
+  MATCH
+  TOURNAMENT
+}
+
+enum AwardType {
+  MAN_OF_THE_MATCH
+  BEST_BATSMAN
+  BEST_BOWLER
+  BEST_FIELDER
+  MOST_SIXES
+  MOST_FOURS
+  HIGHEST_PARTNERSHIP
+  MAN_OF_THE_TOURNAMENT
+  ORANGE_CAP
+  PURPLE_CAP
+  BEST_ALL_ROUNDER
+  HIGHEST_INDIVIDUAL_SCORE
+  BEST_BOWLING_FIGURES
+  BEST_STRIKE_RATE
+  BEST_ECONOMY
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum NotificationType {
+  MATCH_STARTED
+  TOSS_COMPLETED
+  WICKET
+  SIX
+  FIFTY
+  HUNDRED
+  INNINGS_END
+  MATCH_RESULT
+  SCORER_TRANSFER
+  TOURNAMENT_INVITATION
+  TEAM_JOIN_REQUEST
+  TEAM_JOIN_APPROVAL
+  CLAIM_UPDATE
+  GENERAL
+}
+
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+  FORCED
+  ASSIGNED
+  CLAIMED
+  RELEASED
+}
+
+// ─────────────────────────── Users & Roles ───────────────────────────
+
+model User {
+  id          String    @id @default(uuid()) @db.Char(36)
+  googleId    String    @unique @db.VarChar(64)
+  name        String    @db.VarChar(120)
+  email       String    @unique @db.VarChar(191)
+  photoUrl    String?   @db.VarChar(1024)
+  mobile      String?   @db.VarChar(20)
+  city        String?   @db.VarChar(100)
+  isOnboarded Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  player             Player?
+  organizedTournaments Tournament[]        @relation("TournamentOrganizer")
+  createdTeams       Team[]                @relation("TeamCreator")
+  managedTeams       Team[]                @relation("TeamManager")
+  createdMatches     Match[]               @relation("MatchCreator")
+  joinRequests       TeamJoinRequest[]     @relation("JoinRequestUser")
+  reviewedRequests   TeamJoinRequest[]     @relation("JoinRequestReviewer")
+  scorerLocks        ScorerLock[]
+  transfersFrom      ScorerTransferHistory[] @relation("TransferFrom")
+  transfersTo        ScorerTransferHistory[] @relation("TransferTo")
+  transfersActioned  ScorerTransferHistory[] @relation("TransferActor")
+  galleryUploads     Gallery[]
+  notifications      Notification[]
+  deviceTokens       DeviceToken[]
+  auditLogs          AuditLog[]
+  claimRequests      PlayerClaimRequest[]  @relation("ClaimRequester")
+  claimReviews       PlayerClaimRequest[]  @relation("ClaimReviewer")
+  createdPlayers     Player[]              @relation("PlayerCreator")
+
+  @@index([deletedAt])
+  @@index([name])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        RoleName @unique
+  description String?  @db.VarChar(255)
+  /// Array of permission strings, e.g. ["tournament:create", "score:write"]
+  permissions Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  roleId    String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Char(36)
+  userId    String    @db.Char(36)
+  tokenHash String    @unique @db.Char(64)
+  userAgent String?   @db.VarChar(255)
+  ip        String?   @db.VarChar(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────── Tournaments ───────────────────────────
+
+model Tournament {
+  id             String           @id @default(uuid()) @db.Char(36)
+  name           String           @db.VarChar(150)
+  logoUrl        String?          @db.VarChar(1024)
+  bannerUrl      String?          @db.VarChar(1024)
+  description    String?          @db.Text
+  type           TournamentType
+  status         TournamentStatus @default(UPCOMING)
+  overs          Int
+  playersPerTeam Int
+  ballType       BallType         @default(TENNIS)
+  ground         String?          @db.VarChar(150)
+  city           String?          @db.VarChar(100)
+  season         String?          @db.VarChar(20)
+  startDate      DateTime
+  endDate        DateTime
+  organizerId    String           @db.Char(36)
+  fixturesGeneratedAt DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+
+  organizer User             @relation("TournamentOrganizer", fields: [organizerId], references: [id])
+  teams     TournamentTeam[]
+  matches   Match[]
+  awards    Award[]
+  stats     TournamentStats?
+
+  @@index([organizerId])
+  @@index([status, startDate])
+  @@index([season])
+  @@index([deletedAt])
+  @@map("tournaments")
+}
+
+model Team {
+  id             String    @id @default(uuid()) @db.Char(36)
+  name           String    @db.VarChar(120)
+  shortName      String?   @db.VarChar(10)
+  logoUrl        String?   @db.VarChar(1024)
+  color          String?   @db.VarChar(20)
+  captainId      String?   @db.Char(36)
+  managerId      String?   @db.Char(36)
+  wicketKeeperId String?   @db.Char(36)
+  joinCode       String    @unique @db.VarChar(16)
+  qrToken        String    @unique @db.VarChar(64)
+  isTemporary    Boolean   @default(false)
+  createdById    String    @db.Char(36)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  captain      Player?           @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
+  wicketKeeper Player?           @relation("TeamWicketKeeper", fields: [wicketKeeperId], references: [id], onDelete: SetNull)
+  manager      User?             @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
+  createdBy    User              @relation("TeamCreator", fields: [createdById], references: [id])
+  players      TeamPlayer[]
+  joinRequests TeamJoinRequest[]
+  tournaments  TournamentTeam[]
+  matchesAsA   Match[]           @relation("MatchTeamA")
+  matchesAsB   Match[]           @relation("MatchTeamB")
+  tossWins     Match[]           @relation("MatchTossWinner")
+  wins         Match[]           @relation("MatchWinner")
+  battingInnings Innings[]       @relation("InningsBatting")
+  bowlingInnings Innings[]       @relation("InningsBowling")
+  matchPlayers MatchPlayer[]
+  stats        TeamStats?
+  awards       Award[]
+
+  @@index([createdById])
+  @@index([name])
+  @@index([deletedAt])
+  @@map("teams")
+}
+
+/// Membership of a team in a tournament + points table row.
+model TournamentTeam {
+  id            String   @id @default(uuid()) @db.Char(36)
+  tournamentId  String   @db.Char(36)
+  teamId        String   @db.Char(36)
+  groupName     String?  @db.VarChar(20)
+  seed          Int?
+  played        Int      @default(0)
+  won           Int      @default(0)
+  lost          Int      @default(0)
+  tied          Int      @default(0)
+  noResult      Int      @default(0)
+  points        Int      @default(0)
+  runsScored    Int      @default(0)
+  ballsFaced    Int      @default(0)
+  runsConceded  Int      @default(0)
+  ballsBowled   Int      @default(0)
+  netRunRate    Decimal  @default(0) @db.Decimal(8, 3)
+  isEliminated  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, teamId])
+  @@index([tournamentId, points, netRunRate])
+  @@index([teamId])
+  @@map("tournament_teams")
+}
+
+// ─────────────────────────── Players ───────────────────────────
+
+model Player {
+  id            String        @id @default(uuid()) @db.Char(36)
+  userId        String?       @unique @db.Char(36)
+  name          String        @db.VarChar(120)
+  photoUrl      String?       @db.VarChar(1024)
+  jerseyNumber  Int?
+  role          PlayerRole?
+  battingStyle  BattingStyle?
+  bowlingStyle  BowlingStyle?
+  bowlingArm    BowlingArm?
+  isTemporary   Boolean       @default(false)
+  /// Placeholder code for quick-match players (T1, P3, BT2 ...)
+  tempCode      String?       @db.VarChar(10)
+  createdById   String?       @db.Char(36)
+  mergedIntoId  String?       @db.Char(36)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdBy   User?      @relation("PlayerCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  mergedInto  Player?    @relation("PlayerMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedFrom  Player[]   @relation("PlayerMerge")
+
+  teams             TeamPlayer[]
+  joinRequests      TeamJoinRequest[]
+  captainOf         Team[]              @relation("TeamCaptain")
+  keeperOf          Team[]              @relation("TeamWicketKeeper")
+  matchPlayers      MatchPlayer[]
+  matchStats        PlayerMatchStats[]
+  careerStats       PlayerCareerStats?
+  claimsAsTemporary PlayerClaimRequest[] @relation("ClaimTemporary")
+  claimsAsTarget    PlayerClaimRequest[] @relation("ClaimTarget")
+  awards            Award[]              @relation("AwardPlayer")
+  awardsSecondary   Award[]              @relation("AwardSecondPlayer")
+
+  @@index([name])
+  @@index([isTemporary])
+  @@index([deletedAt])
+  @@map("players")
+}
+
+model TeamPlayer {
+  id        String           @id @default(uuid()) @db.Char(36)
+  teamId    String           @db.Char(36)
+  playerId  String           @db.Char(36)
+  status    MembershipStatus @default(ACTIVE)
+  joinedAt  DateTime         @default(now())
+  removedAt DateTime?
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+  @@index([playerId])
+  @@map("team_players")
+}
+
+model TeamJoinRequest {
+  id           String        @id @default(uuid()) @db.Char(36)
+  teamId       String        @db.Char(36)
+  userId       String        @db.Char(36)
+  playerId     String        @db.Char(36)
+  status       RequestStatus @default(PENDING)
+  message      String?       @db.VarChar(255)
+  reviewedById String?       @db.Char(36)
+  reviewedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  team       Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User   @relation("JoinRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  player     Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  reviewedBy User?  @relation("JoinRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([teamId, status])
+  @@index([userId])
+  @@map("team_join_requests")
+}
+
+model PlayerClaimRequest {
+  id                String        @id @default(uuid()) @db.Char(36)
+  temporaryPlayerId String        @db.Char(36)
+  targetPlayerId    String        @db.Char(36)
+  requestedById     String        @db.Char(36)
+  status            RequestStatus @default(PENDING)
+  message           String?       @db.VarChar(255)
+  reviewedById      String?       @db.Char(36)
+  reviewedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  temporaryPlayer Player @relation("ClaimTemporary", fields: [temporaryPlayerId], references: [id], onDelete: Cascade)
+  targetPlayer    Player @relation("ClaimTarget", fields: [targetPlayerId], references: [id], onDelete: Cascade)
+  requestedBy     User   @relation("ClaimRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+  reviewedBy      User?  @relation("ClaimReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([temporaryPlayerId, status])
+  @@index([requestedById])
+  @@map("player_claim_requests")
+}
+
+// ─────────────────────────── Matches ───────────────────────────
+
+model Match {
+  id               String         @id @default(uuid()) @db.Char(36)
+  tournamentId     String?        @db.Char(36)
+  name             String?        @db.VarChar(150)
+  teamAId          String         @db.Char(36)
+  teamBId          String         @db.Char(36)
+  playersPerTeam   Int
+  overs            Int
+  ballsPerOver     Int            @default(6)
+  wideRuns         Int            @default(1)
+  noBallRuns       Int            @default(1)
+  ground           String?        @db.VarChar(150)
+  scheduledAt      DateTime?
+  ballType         BallType?
+  pitchType        PitchType?
+  umpireName       String?        @db.VarChar(120)
+  status           MatchStatus    @default(SCHEDULED)
+  stage            MatchStage     @default(FRIENDLY)
+  roundNumber      Int?
+  matchNumber      Int?
+  isQuickMatch     Boolean        @default(false)
+  tossWinnerId     String?        @db.Char(36)
+  tossDecision     TossDecision?
+  currentInningsNo Int            @default(0)
+  isPaused         Boolean        @default(false)
+  pauseReason      String?        @db.VarChar(255)
+  resultType       ResultType?
+  winnerTeamId     String?        @db.Char(36)
+  winMargin        Int?
+  winMarginType    WinMarginType?
+  resultText       String?        @db.VarChar(255)
+  mvpPlayerId      String?        @db.Char(36)
+  createdById      String         @db.Char(36)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
+
+  tournament  Tournament?  @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  teamA       Team         @relation("MatchTeamA", fields: [teamAId], references: [id])
+  teamB       Team         @relation("MatchTeamB", fields: [teamBId], references: [id])
+  tossWinner  Team?        @relation("MatchTossWinner", fields: [tossWinnerId], references: [id])
+  winner      Team?        @relation("MatchWinner", fields: [winnerTeamId], references: [id])
+  createdBy   User         @relation("MatchCreator", fields: [createdById], references: [id])
+
+  players       MatchPlayer[]
+  innings       Innings[]
+  balls         Ball[]
+  scoreEvents   ScoreEvent[]
+  commentary    Commentary[]
+  playerStats   PlayerMatchStats[]
+  awards        Award[]
+  gallery       Gallery[]
+  scorerLock    ScorerLock?
+  transfers     ScorerTransferHistory[]
+  auditLogs     AuditLog[]
+
+  @@index([status, scheduledAt])
+  @@index([tournamentId, stage, roundNumber])
+  @@index([teamAId])
+  @@index([teamBId])
+  @@index([createdById])
+  @@index([ground])
+  @@index([deletedAt])
+  @@map("matches")
+}
+
+/// Playing XI (squad) per team per match.
+model MatchPlayer {
+  id           String   @id @default(uuid()) @db.Char(36)
+  matchId      String   @db.Char(36)
+  teamId       String   @db.Char(36)
+  playerId     String   @db.Char(36)
+  battingOrder Int?
+  isCaptain    Boolean  @default(false)
+  isKeeper     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, playerId])
+  @@index([matchId, teamId])
+  @@index([playerId])
+  @@map("match_players")
+}
+
+model Innings {
+  id              String        @id @default(uuid()) @db.Char(36)
+  matchId         String        @db.Char(36)
+  number          Int
+  isSuperOver     Boolean       @default(false)
+  battingTeamId   String        @db.Char(36)
+  bowlingTeamId   String        @db.Char(36)
+  status          InningsStatus @default(IN_PROGRESS)
+  maxOvers        Int
+  maxWickets      Int
+  target          Int?
+  runs            Int           @default(0)
+  wickets         Int           @default(0)
+  legalBalls      Int           @default(0)
+  completedOvers  Int           @default(0)
+  ballsInOver     Int           @default(0)
+  wides           Int           @default(0)
+  noBalls         Int           @default(0)
+  byes            Int           @default(0)
+  legByes         Int           @default(0)
+  penaltyRuns     Int           @default(0)
+  isAllOut        Boolean       @default(false)
+  strikerId       String?       @db.Char(36)
+  nonStrikerId    String?       @db.Char(36)
+  bowlerId        String?       @db.Char(36)
+  previousBowlerId String?      @db.Char(36)
+  endReason       String?       @db.VarChar(100)
+  startedAt       DateTime      @default(now())
+  endedAt         DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  match        Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  battingTeam  Team          @relation("InningsBatting", fields: [battingTeamId], references: [id])
+  bowlingTeam  Team          @relation("InningsBowling", fields: [bowlingTeamId], references: [id])
+  balls        Ball[]
+  partnerships Partnership[]
+  commentary   Commentary[]
+
+  @@unique([matchId, number])
+  @@map("innings")
+}
+
+model Ball {
+  /// Client-generated UUID (supports idempotent offline sync)
+  id                String      @id @db.Char(36)
+  matchId           String      @db.Char(36)
+  inningsId         String      @db.Char(36)
+  /// Server-assigned order within innings (monotonic, never reused)
+  sequence          Int
+  kind              BallKind    @default(DELIVERY)
+  overNumber        Int         @default(0)
+  ballInOver        Int         @default(0)
+  isLegal           Boolean     @default(true)
+  batsmanId         String?     @db.Char(36)
+  nonStrikerId      String?     @db.Char(36)
+  bowlerId          String?     @db.Char(36)
+  runsOffBat        Int         @default(0)
+  extraType         ExtraType   @default(NONE)
+  extraRuns         Int         @default(0)
+  totalRuns         Int         @default(0)
+  isBoundary        Boolean     @default(false)
+  isFour            Boolean     @default(false)
+  isSix             Boolean     @default(false)
+  isWicket          Boolean     @default(false)
+  wicketType        WicketType?
+  dismissedPlayerId String?     @db.Char(36)
+  fielderId         String?     @db.Char(36)
+  scoreAfter        Int         @default(0)
+  wicketsAfter      Int         @default(0)
+  clientSequence    Int?
+  clientCreatedAt   DateTime?
+  scoredById        String?     @db.Char(36)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+
+  match      Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  innings    Innings      @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  commentary Commentary[]
+
+  @@unique([inningsId, sequence])
+  @@index([matchId, deletedAt])
+  @@index([batsmanId])
+  @@index([bowlerId])
+  @@map("balls")
+}
+
+/// Append-only timeline of every scoring action.
+model ScoreEvent {
+  id        String         @id @default(uuid()) @db.Char(36)
+  matchId   String         @db.Char(36)
+  inningsNo Int?
+  ballId    String?        @db.Char(36)
+  type      ScoreEventType
+  payload   Json?
+  userId    String?        @db.Char(36)
+  createdAt DateTime       @default(now())
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId, createdAt])
+  @@map("score_events")
+}
+
+model Commentary {
+  id        String         @id @default(uuid()) @db.Char(36)
+  matchId   String         @db.Char(36)
+  inningsId String?        @db.Char(36)
+  ballId    String?        @db.Char(36)
+  type      CommentaryType
+  overLabel String?        @db.VarChar(10)
+  text      String         @db.Text
+  isAuto    Boolean        @default(true)
+  createdById String?      @db.Char(36)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  deletedAt DateTime?
+
+  match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  innings Innings? @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  ball    Ball?    @relation(fields: [ballId], references: [id], onDelete: Cascade)
+
+  @@index([matchId, deletedAt, createdAt])
+  @@index([ballId])
+  @@map("commentary")
+}
+
+model Partnership {
+  id            String   @id @default(uuid()) @db.Char(36)
+  inningsId     String   @db.Char(36)
+  matchId       String   @db.Char(36)
+  wicketNumber  Int
+  batter1Id     String   @db.Char(36)
+  batter2Id     String   @db.Char(36)
+  runs          Int      @default(0)
+  balls         Int      @default(0)
+  batter1Runs   Int      @default(0)
+  batter1Balls  Int      @default(0)
+  batter2Runs   Int      @default(0)
+  batter2Balls  Int      @default(0)
+  isUnbroken    Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  innings Innings @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+
+  @@index([inningsId])
+  @@index([matchId, runs])
+  @@map("partnerships")
+}
+
+// ─────────────────────────── Statistics ───────────────────────────
+
+model PlayerMatchStats {
+  id              String      @id @default(uuid()) @db.Char(36)
+  matchId         String      @db.Char(36)
+  playerId        String      @db.Char(36)
+  teamId          String      @db.Char(36)
+  // batting
+  batted          Boolean     @default(false)
+  battingPosition Int?
+  runs            Int         @default(0)
+  ballsFaced      Int         @default(0)
+  fours           Int         @default(0)
+  sixes           Int         @default(0)
+  dots            Int         @default(0)
+  isOut           Boolean     @default(false)
+  wicketType      WicketType?
+  dismissedById   String?     @db.Char(36)
+  fielderId       String?     @db.Char(36)
+  dismissalText   String?     @db.VarChar(150)
+  // bowling
+  bowled          Boolean     @default(false)
+  ballsBowled     Int         @default(0)
+  runsConceded    Int         @default(0)
+  wickets         Int         @default(0)
+  maidens         Int         @default(0)
+  widesBowled     Int         @default(0)
+  noBallsBowled   Int         @default(0)
+  dotsBowled      Int         @default(0)
+  // fielding
+  catches         Int         @default(0)
+  runOuts         Int         @default(0)
+  stumpings       Int         @default(0)
+  // impact points (MVP engine)
+  battingPoints   Decimal     @default(0) @db.Decimal(8, 2)
+  bowlingPoints   Decimal     @default(0) @db.Decimal(8, 2)
+  fieldingPoints  Decimal     @default(0) @db.Decimal(8, 2)
+  mvpPoints       Decimal     @default(0) @db.Decimal(8, 2)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, playerId])
+  @@index([playerId])
+  @@index([teamId])
+  @@map("player_match_stats")
+}
+
+model PlayerCareerStats {
+  id                 String   @id @default(uuid()) @db.Char(36)
+  playerId           String   @unique @db.Char(36)
+  matches            Int      @default(0)
+  // batting
+  battingInnings     Int      @default(0)
+  notOuts            Int      @default(0)
+  runs               Int      @default(0)
+  ballsFaced         Int      @default(0)
+  highestScore       Int      @default(0)
+  highestScoreNotOut Boolean  @default(false)
+  battingAverage     Decimal  @default(0) @db.Decimal(8, 2)
+  strikeRate         Decimal  @default(0) @db.Decimal(8, 2)
+  fifties            Int      @default(0)
+  hundreds           Int      @default(0)
+  ducks              Int      @default(0)
+  fours              Int      @default(0)
+  sixes              Int      @default(0)
+  // bowling
+  bowlingInnings     Int      @default(0)
+  ballsBowled        Int      @default(0)
+  overs              String   @default("0.0") @db.VarChar(12)
+  runsConceded       Int      @default(0)
+  wickets            Int      @default(0)
+  economy            Decimal  @default(0) @db.Decimal(8, 2)
+  bowlingAverage     Decimal  @default(0) @db.Decimal(8, 2)
+  maidens            Int      @default(0)
+  bestBowlingWickets Int      @default(0)
+  bestBowlingRuns    Int      @default(0)
+  // fielding
+  catches            Int      @default(0)
+  runOuts            Int      @default(0)
+  stumpings          Int      @default(0)
+  updatedAt          DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([runs])
+  @@index([wickets])
+  @@map("player_career_stats")
+}
+
+model TeamStats {
+  id            String   @id @default(uuid()) @db.Char(36)
+  teamId        String   @unique @db.Char(36)
+  matches       Int      @default(0)
+  won           Int      @default(0)
+  lost          Int      @default(0)
+  tied          Int      @default(0)
+  noResult      Int      @default(0)
+  winPercentage Decimal  @default(0) @db.Decimal(6, 2)
+  highestTotal  Int      @default(0)
+  lowestTotal   Int?
+  totalRuns     Int      @default(0)
+  totalWickets  Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_stats")
+}
+
+model TournamentStats {
+  id              String   @id @default(uuid()) @db.Char(36)
+  tournamentId    String   @unique @db.Char(36)
+  matchesPlayed   Int      @default(0)
+  totalRuns       Int      @default(0)
+  totalWickets    Int      @default(0)
+  totalFours      Int      @default(0)
+  totalSixes      Int      @default(0)
+  highestTotal    Int      @default(0)
+  highestTotalTeamId String? @db.Char(36)
+  lowestTotal     Int?
+  /// Leaderboards snapshot (top batters, bowlers, etc.)
+  leaderboards    Json?
+  updatedAt       DateTime @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@map("tournament_stats")
+}
+
+model Award {
+  id             String     @id @default(uuid()) @db.Char(36)
+  scope          AwardScope
+  type           AwardType
+  matchId        String?    @db.Char(36)
+  tournamentId   String?    @db.Char(36)
+  playerId       String?    @db.Char(36)
+  secondPlayerId String?    @db.Char(36)
+  teamId         String?    @db.Char(36)
+  value          String?    @db.VarChar(100)
+  points         Decimal?   @db.Decimal(10, 2)
+  isOverridden   Boolean    @default(false)
+  overriddenById String?    @db.Char(36)
+  note           String?    @db.VarChar(255)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  match        Match?      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player       Player?     @relation("AwardPlayer", fields: [playerId], references: [id], onDelete: SetNull)
+  secondPlayer Player?     @relation("AwardSecondPlayer", fields: [secondPlayerId], references: [id], onDelete: SetNull)
+  team         Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@unique([matchId, type])
+  @@unique([tournamentId, type])
+  @@index([playerId])
+  @@map("awards")
+}
+
+// ─────────────────────────── Media / Notifications ───────────────────────────
+
+model Gallery {
+  id           String    @id @default(uuid()) @db.Char(36)
+  matchId      String    @db.Char(36)
+  type         MediaType
+  url          String    @db.VarChar(1024)
+  storageKey   String    @db.VarChar(512)
+  mimeType     String    @db.VarChar(100)
+  sizeBytes    Int
+  caption      String?   @db.VarChar(500)
+  uploadedById String    @db.Char(36)
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  match      Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id])
+
+  @@index([matchId, deletedAt, createdAt])
+  @@map("galleries")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Char(36)
+  userId    String           @db.Char(36)
+  type      NotificationType
+  title     String           @db.VarChar(200)
+  body      String           @db.VarChar(1000)
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  token     String   @unique @db.VarChar(512)
+  platform  String   @default("android") @db.VarChar(20)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+// ─────────────────────────── Scorer lock ───────────────────────────
+
+model ScorerLock {
+  id          String   @id @default(uuid()) @db.Char(36)
+  matchId     String   @unique @db.Char(36)
+  userId      String   @db.Char(36)
+  acquiredAt  DateTime @default(now())
+  heartbeatAt DateTime @default(now())
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("scorer_locks")
+}
+
+model ScorerTransferHistory {
+  id          String         @id @default(uuid()) @db.Char(36)
+  matchId     String         @db.Char(36)
+  fromUserId  String?        @db.Char(36)
+  toUserId    String         @db.Char(36)
+  actorId     String         @db.Char(36)
+  status      TransferStatus
+  reason      String?        @db.VarChar(255)
+  expiresAt   DateTime?
+  respondedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  match    Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  fromUser User? @relation("TransferFrom", fields: [fromUserId], references: [id], onDelete: SetNull)
+  toUser   User  @relation("TransferTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  actor    User  @relation("TransferActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([matchId, status])
+  @@index([toUserId, status])
+  @@map("scorer_transfer_history")
+}
+
+// ─────────────────────────── Audit ───────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String?  @db.Char(36)
+  matchId    String?  @db.Char(36)
+  entityType String   @db.VarChar(50)
+  entityId   String?  @db.Char(36)
+  action     String   @db.VarChar(50)
+  ballLabel  String?  @db.VarChar(10)
+  oldValue   Json?
+  newValue   Json?
+  reason     String?  @db.VarChar(255)
+  ip         String?  @db.VarChar(64)
+  createdAt  DateTime @default(now())
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  match Match? @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([matchId, createdAt])
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}

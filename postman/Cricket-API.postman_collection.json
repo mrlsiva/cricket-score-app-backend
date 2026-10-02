@@ -1,0 +1,6130 @@
+{
+  "info": {
+    "name": "Cricket Scoring & Tournament API",
+    "description": "Complete REST collection for the Cricket Scoring & Tournament Management backend.\n\n**Getting started:** run the **Quick Start** folder top to bottom. Login stores `accessToken` automatically (collection-level Bearer auth); creating resources stores their ids in collection variables used by later requests.\n\n- `POST /auth/dev-login` works when `AUTH_DEV_LOGIN=true` (never in production). With a real Google ID token use **Authentication → Sign in with Google**.\n- Use a second login (different email) + **Scorer Management** to try scorer transfer; set `otherUserId` to that user id.\n- WebSocket events are not covered by Postman REST; connect to `{{baseUrl}}/live` with Socket.IO (see API docs at /docs).\n\nDeveloped by Sling Groups",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "otherUserId",
+      "value": ""
+    },
+    {
+      "key": "playerId",
+      "value": ""
+    },
+    {
+      "key": "teamId",
+      "value": ""
+    },
+    {
+      "key": "teamBId",
+      "value": ""
+    },
+    {
+      "key": "tournamentId",
+      "value": ""
+    },
+    {
+      "key": "matchId",
+      "value": ""
+    },
+    {
+      "key": "ballId",
+      "value": ""
+    },
+    {
+      "key": "strikerId",
+      "value": ""
+    },
+    {
+      "key": "nonStrikerId",
+      "value": ""
+    },
+    {
+      "key": "bowlerId",
+      "value": ""
+    },
+    {
+      "key": "bowler2Id",
+      "value": ""
+    },
+    {
+      "key": "fielderId",
+      "value": ""
+    },
+    {
+      "key": "transferId",
+      "value": ""
+    },
+    {
+      "key": "claimId",
+      "value": ""
+    },
+    {
+      "key": "requestId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "galleryId",
+      "value": ""
+    },
+    {
+      "key": "commentaryId",
+      "value": ""
+    },
+    {
+      "key": "joinCode",
+      "value": ""
+    },
+    {
+      "key": "tempPlayerId",
+      "value": ""
+    },
+    {
+      "key": "fcmToken",
+      "value": "fcm-device-token"
+    }
+  ],
+  "item": [
+    {
+      "name": "⚡ Quick Start (run in order)",
+      "item": [
+        {
+          "name": "1. Login (dev) - saves tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/dev-login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "dev-login"
+              ],
+              "query": []
+            },
+            "description": "Development-only login without Google (disabled unless AUTH_DEV_LOGIN=true and not production)",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"organizer@test.local\",\n  \"name\": \"Test Organizer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('accessToken', d.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', d.refreshToken);",
+                  "pm.collectionVariables.set('userId', d.user.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Onboarding: Organizer + Individual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "onboarding"
+              ],
+              "query": []
+            },
+            "description": "First-login account type selection (Organizer and/or Individual)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountTypes\": [\n    \"ORGANIZER\",\n    \"INDIVIDUAL\"\n  ],\n  \"city\": \"Chennai\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data; if (d.player) pm.collectionVariables.set('playerId', d.player.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Create quick match - saves match & player ids",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/quick",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "quick"
+              ],
+              "query": []
+            },
+            "description": "Quick match: temporary teams with placeholder players (T1..Tn / P1..Pn), renameable and claimable later",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamAName\": \"Lions\",\n  \"teamBName\": \"Tigers\",\n  \"playersPerTeam\": 6,\n  \"overs\": 5,\n  \"tossWinner\": \"A\",\n  \"tossDecision\": \"BAT\",\n  \"ground\": \"Marina Ground\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const m = pm.response.json().data;",
+                  "pm.collectionVariables.set('matchId', m.id);",
+                  "pm.collectionVariables.set('teamId', m.teamAId); pm.collectionVariables.set('teamBId', m.teamBId);",
+                  "const a = m.squads.teamA.map(p => p.player.id), b = m.squads.teamB.map(p => p.player.id);",
+                  "const batA = m.tossDecision === 'BAT' ? (m.tossWinnerId === m.teamAId) : (m.tossWinnerId !== m.teamAId);",
+                  "const bat = batA ? a : b, bowl = batA ? b : a;",
+                  "pm.collectionVariables.set('strikerId', bat[0]); pm.collectionVariables.set('nonStrikerId', bat[1]);",
+                  "pm.collectionVariables.set('bowlerId', bowl[0]); pm.collectionVariables.set('bowler2Id', bowl[1]); pm.collectionVariables.set('fielderId', bowl[2] ?? bowl[0]);",
+                  "pm.collectionVariables.set('tempPlayerId', a[a.length - 1]);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Start match (acquires scorer lock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "start"
+              ],
+              "query": []
+            },
+            "description": "Start match: acquires the scorer lock and opens innings 1 with openers & bowler\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strikerId\": \"{{strikerId}}\",\n  \"nonStrikerId\": \"{{nonStrikerId}}\",\n  \"bowlerId\": \"{{bowlerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Ball: single",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls"
+              ],
+              "query": []
+            },
+            "description": "Score a ball\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.\n\nExamples:\n- Dot: `{ \"runs\": 0 }`\n- Four: `{ \"runs\": 4 }`\n- Wide + 1 run: `{ \"runs\": 1, \"extraType\": \"WIDE\" }`\n- No-ball hit for six: `{ \"runs\": 6, \"extraType\": \"NO_BALL\" }`\n- Leg byes: `{ \"runs\": 2, \"extraType\": \"LEG_BYE\" }`\n- Caught: `{ \"runs\": 0, \"wicketType\": \"CAUGHT\", \"fielderId\": \"...\" }`\n- Run out of non-striker on 1st run: `{ \"runs\": 0, \"wicketType\": \"RUN_OUT\", \"dismissedPlayerId\": \"...\", \"fielderId\": \"...\" }`\n\nSend a client `id` (UUID) to make retries idempotent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{$guid}}\",\n  \"runs\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('ballId', d.ball.id);",
+                  "const c = d.snapshot.current;",
+                  "if (c) console.log(`${c.score} (${c.overs})  ${c.equation ?? ''}`, c.needsNewBatsman ? '→ set new batter' : '', c.needsNewBowler ? '→ change bowler' : '');",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6. Ball: wide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls"
+              ],
+              "query": []
+            },
+            "description": "Score a ball\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.\n\nExamples:\n- Dot: `{ \"runs\": 0 }`\n- Four: `{ \"runs\": 4 }`\n- Wide + 1 run: `{ \"runs\": 1, \"extraType\": \"WIDE\" }`\n- No-ball hit for six: `{ \"runs\": 6, \"extraType\": \"NO_BALL\" }`\n- Leg byes: `{ \"runs\": 2, \"extraType\": \"LEG_BYE\" }`\n- Caught: `{ \"runs\": 0, \"wicketType\": \"CAUGHT\", \"fielderId\": \"...\" }`\n- Run out of non-striker on 1st run: `{ \"runs\": 0, \"wicketType\": \"RUN_OUT\", \"dismissedPlayerId\": \"...\", \"fielderId\": \"...\" }`\n\nSend a client `id` (UUID) to make retries idempotent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{$guid}}\",\n  \"runs\": 0,\n  \"extraType\": \"WIDE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('ballId', d.ball.id);",
+                  "const c = d.snapshot.current;",
+                  "if (c) console.log(`${c.score} (${c.overs})  ${c.equation ?? ''}`, c.needsNewBatsman ? '→ set new batter' : '', c.needsNewBowler ? '→ change bowler' : '');",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Ball: FOUR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls"
+              ],
+              "query": []
+            },
+            "description": "Score a ball\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.\n\nExamples:\n- Dot: `{ \"runs\": 0 }`\n- Four: `{ \"runs\": 4 }`\n- Wide + 1 run: `{ \"runs\": 1, \"extraType\": \"WIDE\" }`\n- No-ball hit for six: `{ \"runs\": 6, \"extraType\": \"NO_BALL\" }`\n- Leg byes: `{ \"runs\": 2, \"extraType\": \"LEG_BYE\" }`\n- Caught: `{ \"runs\": 0, \"wicketType\": \"CAUGHT\", \"fielderId\": \"...\" }`\n- Run out of non-striker on 1st run: `{ \"runs\": 0, \"wicketType\": \"RUN_OUT\", \"dismissedPlayerId\": \"...\", \"fielderId\": \"...\" }`\n\nSend a client `id` (UUID) to make retries idempotent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{$guid}}\",\n  \"runs\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('ballId', d.ball.id);",
+                  "const c = d.snapshot.current;",
+                  "if (c) console.log(`${c.score} (${c.overs})  ${c.equation ?? ''}`, c.needsNewBatsman ? '→ set new batter' : '', c.needsNewBowler ? '→ change bowler' : '');",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8. Ball: SIX",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls"
+              ],
+              "query": []
+            },
+            "description": "Score a ball\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.\n\nExamples:\n- Dot: `{ \"runs\": 0 }`\n- Four: `{ \"runs\": 4 }`\n- Wide + 1 run: `{ \"runs\": 1, \"extraType\": \"WIDE\" }`\n- No-ball hit for six: `{ \"runs\": 6, \"extraType\": \"NO_BALL\" }`\n- Leg byes: `{ \"runs\": 2, \"extraType\": \"LEG_BYE\" }`\n- Caught: `{ \"runs\": 0, \"wicketType\": \"CAUGHT\", \"fielderId\": \"...\" }`\n- Run out of non-striker on 1st run: `{ \"runs\": 0, \"wicketType\": \"RUN_OUT\", \"dismissedPlayerId\": \"...\", \"fielderId\": \"...\" }`\n\nSend a client `id` (UUID) to make retries idempotent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{$guid}}\",\n  \"runs\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('ballId', d.ball.id);",
+                  "const c = d.snapshot.current;",
+                  "if (c) console.log(`${c.score} (${c.overs})  ${c.equation ?? ''}`, c.needsNewBatsman ? '→ set new batter' : '', c.needsNewBowler ? '→ change bowler' : '');",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9. Ball: caught",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls"
+              ],
+              "query": []
+            },
+            "description": "Score a ball\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.\n\nExamples:\n- Dot: `{ \"runs\": 0 }`\n- Four: `{ \"runs\": 4 }`\n- Wide + 1 run: `{ \"runs\": 1, \"extraType\": \"WIDE\" }`\n- No-ball hit for six: `{ \"runs\": 6, \"extraType\": \"NO_BALL\" }`\n- Leg byes: `{ \"runs\": 2, \"extraType\": \"LEG_BYE\" }`\n- Caught: `{ \"runs\": 0, \"wicketType\": \"CAUGHT\", \"fielderId\": \"...\" }`\n- Run out of non-striker on 1st run: `{ \"runs\": 0, \"wicketType\": \"RUN_OUT\", \"dismissedPlayerId\": \"...\", \"fielderId\": \"...\" }`\n\nSend a client `id` (UUID) to make retries idempotent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{$guid}}\",\n  \"runs\": 0,\n  \"wicketType\": \"CAUGHT\",\n  \"fielderId\": \"{{fielderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('ballId', d.ball.id);",
+                  "const c = d.snapshot.current;",
+                  "if (c) console.log(`${c.score} (${c.overs})  ${c.equation ?? ''}`, c.needsNewBatsman ? '→ set new batter' : '', c.needsNewBowler ? '→ change bowler' : '');",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10. Undo last ball",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls/undo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls",
+                "undo"
+              ],
+              "query": []
+            },
+            "description": "Undo last ball (restores batters / bowler, re-opens an innings it had ended)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11. Live snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/live",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "live"
+              ],
+              "query": []
+            },
+            "description": "Live score snapshot (score, CRR, target, RRR, batters, bowler, this over, partnership)"
+          },
+          "response": []
+        },
+        {
+          "name": "12. Scorecard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorecard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorecard"
+              ],
+              "query": []
+            },
+            "description": "Full scorecard for every innings"
+          },
+          "response": []
+        },
+        {
+          "name": "13. Commentary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/commentary?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "commentary"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "inningsNumber",
+                  "value": "",
+                  "description": "Filter by innings number (1, 2, 3 = super over...)",
+                  "disabled": true
+                },
+                {
+                  "key": "types",
+                  "value": "BALL",
+                  "description": "Comma separated, e.g. WICKET,SIX,BOUNDARY",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Ball-by-ball commentary (newest first by default). Filter by inningsNumber / types"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Public sign-in configuration for clients (Google client id, whether dev login is enabled)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "config"
+              ],
+              "query": []
+            },
+            "description": "Public sign-in configuration for clients (Google client id, whether dev login is enabled)"
+          },
+          "response": []
+        },
+        {
+          "name": "Sign in with Google",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "google"
+              ],
+              "query": []
+            },
+            "description": "Sign in with Google\n\n1. Android obtains a Google **ID token** (audience = Web client ID configured in GOOGLE_CLIENT_IDS).\n2. POST it here → receive `accessToken` (JWT, short-lived) + `refreshToken` (opaque, rotating).\n3. If `requiresOnboarding` is true, call `POST /auth/onboarding` to pick Organizer / Individual.\n4. Send `Authorization: Bearer <accessToken>` on every request; refresh via `POST /auth/refresh`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"idToken\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('accessToken', d.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', d.refreshToken);",
+                  "pm.collectionVariables.set('userId', d.user.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Development-only login without Google (disabled unless AUTH_DEV_LOGIN=true and not production)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/dev-login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "dev-login"
+              ],
+              "query": []
+            },
+            "description": "Development-only login without Google (disabled unless AUTH_DEV_LOGIN=true and not production)",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"organizer@test.local\",\n  \"name\": \"Test Organizer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('accessToken', d.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', d.refreshToken);",
+                  "pm.collectionVariables.set('userId', d.user.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rotate refresh token and obtain a new access token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ],
+              "query": []
+            },
+            "description": "Rotate refresh token and obtain a new access token",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('accessToken', d.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', d.refreshToken);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoke a refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ],
+              "query": []
+            },
+            "description": "Revoke a refresh token",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "First-login account type selection (Organizer and/or Individual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "onboarding"
+              ],
+              "query": []
+            },
+            "description": "First-login account type selection (Organizer and/or Individual)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountTypes\": [\n    \"ORGANIZER\",\n    \"INDIVIDUAL\"\n  ],\n  \"city\": \"Chennai\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data; if (d.player) pm.collectionVariables.set('playerId', d.player.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current user profile with roles and player profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "Current user profile with roles and player profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Search users (e.g. to pick a scorer or team manager). Sort: name | createdAt | city",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "city",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "SUPER_ADMIN",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search users (e.g. to pick a scorer or team manager). Sort: name | createdAt | city"
+          },
+          "response": []
+        },
+        {
+          "name": "Update my profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "Update my profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"name\",\n  \"city\": \"city\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete my account (soft delete, statistics are kept)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "Delete my account (soft delete, statistics are kept)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload my profile / player photo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/photo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "photo"
+              ],
+              "query": []
+            },
+            "description": "Upload my profile / player photo",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image / video file"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Public user profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ],
+              "query": []
+            },
+            "description": "Public user profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate / deactivate a user (Super Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "status"
+              ],
+              "query": []
+            },
+            "description": "Activate / deactivate a user (Super Admin)",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Roles & Permissions",
+      "item": [
+        {
+          "name": "List roles with their permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles"
+              ],
+              "query": []
+            },
+            "description": "List roles with their permissions"
+          },
+          "response": []
+        },
+        {
+          "name": "List all known permission keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "permissions"
+              ],
+              "query": []
+            },
+            "description": "List all known permission keys"
+          },
+          "response": []
+        },
+        {
+          "name": "Replace the permission set of a role (Super Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/{{ORGANIZER}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "{{ORGANIZER}}",
+                "permissions"
+              ],
+              "query": []
+            },
+            "description": "Replace the permission set of a role (Super Admin)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\n    \"match:view\",\n    \"stats:read\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Grant roles to a user (Super Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "users",
+                "{{userId}}"
+              ],
+              "query": []
+            },
+            "description": "Grant roles to a user (Super Admin)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"SUPER_ADMIN\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke roles from a user (Super Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/roles/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "roles",
+                "users",
+                "{{userId}}"
+              ],
+              "query": []
+            },
+            "description": "Revoke roles from a user (Super Admin)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"SUPER_ADMIN\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Players",
+      "item": [
+        {
+          "name": "Search players. Filters: temporary, teamId, matchId, role. Sort: name | createdAt | jerseyNumber",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "temporary",
+                  "value": "",
+                  "description": "true = only quick-match temporary players, false = only registered",
+                  "disabled": true
+                },
+                {
+                  "key": "teamId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "matchId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "BATSMAN",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search players. Filters: temporary, teamId, matchId, role. Sort: name | createdAt | jerseyNumber"
+          },
+          "response": []
+        },
+        {
+          "name": "My permanent player profile with career stats (created on first access)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "My permanent player profile with career stats (created on first access)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update my player profile (jersey, role, batting / bowling style...)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "Update my player profile (jersey, role, batting / bowling style...)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Claim records of a temporary quick-match player",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "claims"
+              ],
+              "query": []
+            },
+            "description": "Claim records of a temporary quick-match player\n\nFlow: login → request claim → organizer / captain approves → records merged into your profile → career stats recalculated.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"temporaryPlayerId\": \"{{tempPlayerId}}\",\n  \"message\": \"I played as T3\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('claimId', pm.response.json().data.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My claim requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/claims/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "claims",
+                "mine"
+              ],
+              "query": []
+            },
+            "description": "My claim requests"
+          },
+          "response": []
+        },
+        {
+          "name": "Claims I can approve (organizer / captain / manager)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/claims/review?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "claims",
+                "review"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Claims I can approve (organizer / captain / manager)"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve claim and merge records",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/claims/{{claimId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "claims",
+                "{{claimId}}",
+                "approve"
+              ],
+              "query": []
+            },
+            "description": "Approve claim and merge records"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject claim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/claims/{{claimId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "claims",
+                "{{claimId}}",
+                "reject"
+              ],
+              "query": []
+            },
+            "description": "Reject claim",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Player profile with career statistics, teams and awards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/{{playerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            },
+            "description": "Player profile with career statistics, teams and awards"
+          },
+          "response": []
+        },
+        {
+          "name": "Edit a player (temporary players: by team / match organizer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/players/{{playerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            },
+            "description": "Edit a player (temporary players: by team / match organizer)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "item": [
+        {
+          "name": "Create a team (unique join code + QR token are generated)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams"
+              ],
+              "query": []
+            },
+            "description": "Create a team (unique join code + QR token are generated)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chennai Strikers\",\n  \"shortName\": \"CHS\",\n  \"color\": \"#FFCC00\",\n  \"joinAsPlayer\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('teamId', pm.response.json().data.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List / search teams. Sort: name | createdAt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "mine",
+                  "value": "",
+                  "description": "Only teams I created/manage/play for",
+                  "disabled": true
+                },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "includeTemporary",
+                  "value": "false",
+                  "description": "Include temporary quick-match teams",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List / search teams. Sort: name | createdAt"
+          },
+          "response": []
+        },
+        {
+          "name": "Request to join a team by scanning its QR / entering join code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/join",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "join"
+              ],
+              "query": []
+            },
+            "description": "Request to join a team by scanning its QR / entering join code\n\nCreates a PENDING request; the captain / manager must accept it. Idempotent while pending.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{joinCode}}\",\n  \"message\": \"Opening batter, available weekends\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('requestId', pm.response.json().data.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My team join requests and their status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/join-requests/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "join-requests",
+                "mine"
+              ],
+              "query": []
+            },
+            "description": "My team join requests and their status"
+          },
+          "response": []
+        },
+        {
+          "name": "Team details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}"
+              ],
+              "query": []
+            },
+            "description": "Team details"
+          },
+          "response": []
+        },
+        {
+          "name": "Update team (name, color, captain, manager, wicket keeper...)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}"
+              ],
+              "query": []
+            },
+            "description": "Update team (name, color, captain, manager, wicket keeper...)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chennai Strikers\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete team (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}"
+              ],
+              "query": []
+            },
+            "description": "Delete team (soft delete)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload team logo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/logo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "logo"
+              ],
+              "query": []
+            },
+            "description": "Upload team logo",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image / video file"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Team squad (active players)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/squad",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "squad"
+              ],
+              "query": []
+            },
+            "description": "Team squad (active players)"
+          },
+          "response": []
+        },
+        {
+          "name": "Add a player directly (existing playerId, or name → temporary player)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/players",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "players"
+              ],
+              "query": []
+            },
+            "description": "Add a player directly (existing playerId, or name → temporary player)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Guest Player\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove a player (or leave the team yourself)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/players/{{playerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            },
+            "description": "Remove a player (or leave the team yourself)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get team QR (data URL) + join code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/qr",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "qr"
+              ],
+              "query": []
+            },
+            "description": "Get team QR (data URL) + join code"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('joinCode', pm.response.json().data.joinCode);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generate / regenerate team QR (old QR codes stop working)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/qr?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "qr"
+              ],
+              "query": [
+                {
+                  "key": "regenerate",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Generate / regenerate team QR (old QR codes stop working)"
+          },
+          "response": []
+        },
+        {
+          "name": "Team QR as PNG image (for sharing / printing)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/qr.png",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "qr.png"
+              ],
+              "query": []
+            },
+            "description": "Team QR as PNG image (for sharing / printing)"
+          },
+          "response": []
+        },
+        {
+          "name": "Pending (or filtered) join requests - captain / manager",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/join-requests?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "join-requests"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Pending (or filtered) join requests - captain / manager"
+          },
+          "response": []
+        },
+        {
+          "name": "Accept a join request (player added to squad)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/join-requests/{{requestId}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "join-requests",
+                "{{requestId}}",
+                "accept"
+              ],
+              "query": []
+            },
+            "description": "Accept a join request (player added to squad)"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a join request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teams/{{teamId}}/join-requests/{{requestId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teams",
+                "{{teamId}}",
+                "join-requests",
+                "{{requestId}}",
+                "reject"
+              ],
+              "query": []
+            },
+            "description": "Reject a join request",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tournaments",
+      "item": [
+        {
+          "name": "Create tournament (Organizer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments"
+              ],
+              "query": []
+            },
+            "description": "Create tournament (Organizer)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chennai Premier League 2026\",\n  \"type\": \"LEAGUE_KNOCKOUT\",\n  \"overs\": 20,\n  \"playersPerTeam\": 11,\n  \"ballType\": \"TENNIS\",\n  \"ground\": \"Marina Ground\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('tournamentId', pm.response.json().data.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List tournaments. Filters: status, type, city, season, mine. Sort: startDate | endDate | createdAt | name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "UPCOMING",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "LEAGUE",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "city",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "season",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "mine",
+                  "value": "",
+                  "description": "Tournaments I organize",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List tournaments. Filters: status, type, city, season, mine. Sort: startDate | endDate | createdAt | name"
+          },
+          "response": []
+        },
+        {
+          "name": "Tournament details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}"
+              ],
+              "query": []
+            },
+            "description": "Tournament details"
+          },
+          "response": []
+        },
+        {
+          "name": "Update tournament (organizer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}"
+              ],
+              "query": []
+            },
+            "description": "Update tournament (organizer)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chennai Premier League 2026\",\n  \"ground\": \"Marina Ground\",\n  \"city\": \"Chennai\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete tournament (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}"
+              ],
+              "query": []
+            },
+            "description": "Delete tournament (soft delete)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload tournament logo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/logo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "logo"
+              ],
+              "query": []
+            },
+            "description": "Upload tournament logo",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image / video file"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload tournament banner",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/banner",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "banner"
+              ],
+              "query": []
+            },
+            "description": "Upload tournament banner",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image / video file"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Teams in the tournament",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/teams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "teams"
+              ],
+              "query": []
+            },
+            "description": "Teams in the tournament"
+          },
+          "response": []
+        },
+        {
+          "name": "Add an existing team or create a new one (sends a tournament invitation notification)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/teams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "teams"
+              ],
+              "query": []
+            },
+            "description": "Add an existing team or create a new one (sends a tournament invitation notification)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chennai Strikers\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove a team (only before it has played)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/teams/{{teamId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "teams",
+                "{{teamId}}"
+              ],
+              "query": []
+            },
+            "description": "Remove a team (only before it has played)"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate fixtures automatically",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/fixtures",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "fixtures"
+              ],
+              "query": []
+            },
+            "description": "Generate fixtures automatically\n\nLEAGUE: round robin. KNOCKOUT: seeded bracket with byes, next rounds auto-created as results arrive. LEAGUE_KNOCKOUT: round robin (per group if groups set), then top teams seeded into semis / final.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matchesPerDay\": 2,\n  \"startTime\": \"09:00\",\n  \"gapMinutes\": 240\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All fixtures / matches by round",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/fixtures",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "fixtures"
+              ],
+              "query": []
+            },
+            "description": "All fixtures / matches by round"
+          },
+          "response": []
+        },
+        {
+          "name": "Points table with Net Run Rate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/points-table",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "points-table"
+              ],
+              "query": []
+            },
+            "description": "Points table with Net Run Rate"
+          },
+          "response": []
+        },
+        {
+          "name": "Force points table recalculation (organizer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/points-table/recalculate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "points-table",
+                "recalculate"
+              ],
+              "query": []
+            },
+            "description": "Force points table recalculation (organizer)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Matches",
+      "item": [
+        {
+          "name": "Create a match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches"
+              ],
+              "query": []
+            },
+            "description": "Create a match\n\nMandatory: teams, players per team, overs, toss winner and bat/bowl decision. Tournament matches require the tournament organizer.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamAId\": \"{{teamId}}\",\n  \"teamBId\": \"{{teamBId}}\",\n  \"playersPerTeam\": 11,\n  \"overs\": 20,\n  \"tossWinnerId\": \"{{teamId}}\",\n  \"tossDecision\": \"BAT\",\n  \"fillWithTemporaryPlayers\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('matchId', pm.response.json().data.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search matches. Filters: status (comma list), tournament, team, player, ground, date range, mine. Sort: scheduledAt | createdAt | completedAt | startedAt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "SCHEDULED",
+                  "description": "Comma separated",
+                  "disabled": true
+                },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "teamId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "playerId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ground",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "stage",
+                  "value": "FRIENDLY",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "mine",
+                  "value": "",
+                  "description": "Matches I created, score, or play in",
+                  "disabled": true
+                },
+                {
+                  "key": "includeQuick",
+                  "value": "false",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search matches. Filters: status (comma list), tournament, team, player, ground, date range, mine. Sort: scheduledAt | createdAt | completedAt | startedAt"
+          },
+          "response": []
+        },
+        {
+          "name": "Quick match: temporary teams with placeholder players (T1..Tn / P1..Pn), renameable and claimable later",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/quick",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "quick"
+              ],
+              "query": []
+            },
+            "description": "Quick match: temporary teams with placeholder players (T1..Tn / P1..Pn), renameable and claimable later",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamAName\": \"Lions\",\n  \"teamBName\": \"Tigers\",\n  \"playersPerTeam\": 6,\n  \"overs\": 5,\n  \"tossWinner\": \"A\",\n  \"tossDecision\": \"BAT\",\n  \"ground\": \"Marina Ground\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const m = pm.response.json().data;",
+                  "pm.collectionVariables.set('matchId', m.id);",
+                  "pm.collectionVariables.set('teamId', m.teamAId); pm.collectionVariables.set('teamBId', m.teamBId);",
+                  "const a = m.squads.teamA.map(p => p.player.id), b = m.squads.teamB.map(p => p.player.id);",
+                  "const batA = m.tossDecision === 'BAT' ? (m.tossWinnerId === m.teamAId) : (m.tossWinnerId !== m.teamAId);",
+                  "const bat = batA ? a : b, bowl = batA ? b : a;",
+                  "pm.collectionVariables.set('strikerId', bat[0]); pm.collectionVariables.set('nonStrikerId', bat[1]);",
+                  "pm.collectionVariables.set('bowlerId', bowl[0]); pm.collectionVariables.set('bowler2Id', bowl[1]); pm.collectionVariables.set('fielderId', bowl[2] ?? bowl[0]);",
+                  "pm.collectionVariables.set('tempPlayerId', a[a.length - 1]);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Live matches (LIVE + INNINGS_BREAK)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/live?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "live"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "teamId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "playerId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ground",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "stage",
+                  "value": "FRIENDLY",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "mine",
+                  "value": "",
+                  "description": "Matches I created, score, or play in",
+                  "disabled": true
+                },
+                {
+                  "key": "includeQuick",
+                  "value": "false",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Live matches (LIVE + INNINGS_BREAK)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upcoming matches (SCHEDULED + TOSS_COMPLETED), soonest first",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/upcoming?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "upcoming"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "teamId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "playerId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ground",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "stage",
+                  "value": "FRIENDLY",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "mine",
+                  "value": "",
+                  "description": "Matches I created, score, or play in",
+                  "disabled": true
+                },
+                {
+                  "key": "includeQuick",
+                  "value": "false",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Upcoming matches (SCHEDULED + TOSS_COMPLETED), soonest first"
+          },
+          "response": []
+        },
+        {
+          "name": "Completed matches, most recent first",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/completed?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "completed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "teamId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "playerId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ground",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "stage",
+                  "value": "FRIENDLY",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "mine",
+                  "value": "",
+                  "description": "Matches I created, score, or play in",
+                  "disabled": true
+                },
+                {
+                  "key": "includeQuick",
+                  "value": "false",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Completed matches, most recent first"
+          },
+          "response": []
+        },
+        {
+          "name": "Match details (teams, squads, innings summary, scorer, awards)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}"
+              ],
+              "query": []
+            },
+            "description": "Match details (teams, squads, innings summary, scorer, awards)"
+          },
+          "response": []
+        },
+        {
+          "name": "Edit match (format fields only before start)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}"
+              ],
+              "query": []
+            },
+            "description": "Edit match (format fields only before start)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sunday Friendly\",\n  \"ground\": \"Marina Ground\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete match (soft delete; statistics are recalculated)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}"
+              ],
+              "query": []
+            },
+            "description": "Delete match (soft delete; statistics are recalculated)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "cancel"
+              ],
+              "query": []
+            },
+            "description": "Cancel match",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Record toss for a scheduled match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/toss",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "toss"
+              ],
+              "query": []
+            },
+            "description": "Record toss for a scheduled match",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tossWinnerId\": \"{{teamId}}\",\n  \"tossDecision\": \"BAT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set playing XI of a team (batting order). During play, players can only be added.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/squads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "squads"
+              ],
+              "query": []
+            },
+            "description": "Set playing XI of a team (batting order). During play, players can only be added.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamId\": \"{{teamId}}\",\n  \"playerIds\": [\n    \"{{playerId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set / override result (no result, abandoned, awarded...) - organizer, audited",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/result",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "result"
+              ],
+              "query": []
+            },
+            "description": "Set / override result (no result, abandoned, awarded...) - organizer, audited",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resultType\": \"WIN\",\n  \"reason\": \"Rain stopped play\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Match timeline: every scoring event (ball added / edited / undone, strike & bowler changes, pauses...)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/timeline?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "timeline"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Match timeline: every scoring event (ball added / edited / undone, strike & bowler changes, pauses...)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Scorer Management",
+      "item": [
+        {
+          "name": "Current scorer, my mode (SCORER / VIEWER) and pending transfer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer"
+              ],
+              "query": []
+            },
+            "description": "Current scorer, my mode (SCORER / VIEWER) and pending transfer"
+          },
+          "response": []
+        },
+        {
+          "name": "Claim a free scorer lock (organizer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer",
+                "claim"
+              ],
+              "query": []
+            },
+            "description": "Claim a free scorer lock (organizer)"
+          },
+          "response": []
+        },
+        {
+          "name": "Organizer assigns the scorer; with force=true performs a force transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer",
+                "assign"
+              ],
+              "query": []
+            },
+            "description": "Organizer assigns the scorer; with force=true performs a force transfer",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"{{otherUserId}}\",\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Organizer force transfer (no acceptance required)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer/force-transfer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer",
+                "force-transfer"
+              ],
+              "query": []
+            },
+            "description": "Organizer force transfer (no acceptance required)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"{{otherUserId}}\",\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Release the scorer lock",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer/release",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer",
+                "release"
+              ],
+              "query": []
+            },
+            "description": "Release the scorer lock"
+          },
+          "response": []
+        },
+        {
+          "name": "Scorer keep-alive (lets organizers see if the scorer is still active)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer/heartbeat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer",
+                "heartbeat"
+              ],
+              "query": []
+            },
+            "description": "Scorer keep-alive (lets organizers see if the scorer is still active)"
+          },
+          "response": []
+        },
+        {
+          "name": "Request scorer transfer (current scorer → another user)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer/transfer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer",
+                "transfer"
+              ],
+              "query": []
+            },
+            "description": "Request scorer transfer (current scorer → another user)\n\n1. Send request → 2. target accepts (POST /scorer/transfers/:id/accept) → 3. lock changes → 4. `scorer:changed` broadcast. Requests expire after 5 minutes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"{{otherUserId}}\",\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('transferId', pm.response.json().data.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scorer transfer history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorer/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorer",
+                "history"
+              ],
+              "query": []
+            },
+            "description": "Scorer transfer history"
+          },
+          "response": []
+        },
+        {
+          "name": "Transfer requests waiting for my response",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/scorer/transfers/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scorer",
+                "transfers",
+                "pending"
+              ],
+              "query": []
+            },
+            "description": "Transfer requests waiting for my response"
+          },
+          "response": []
+        },
+        {
+          "name": "Accept a scorer transfer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/scorer/transfers/{{transferId}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scorer",
+                "transfers",
+                "{{transferId}}",
+                "accept"
+              ],
+              "query": []
+            },
+            "description": "Accept a scorer transfer"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject a scorer transfer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/scorer/transfers/{{transferId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scorer",
+                "transfers",
+                "{{transferId}}",
+                "reject"
+              ],
+              "query": []
+            },
+            "description": "Reject a scorer transfer"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel my outgoing transfer request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/scorer/transfers/{{transferId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scorer",
+                "transfers",
+                "{{transferId}}",
+                "cancel"
+              ],
+              "query": []
+            },
+            "description": "Cancel my outgoing transfer request"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Live Scoring",
+      "item": [
+        {
+          "name": "Live score snapshot (score, CRR, target, RRR, batters, bowler, this over, partnership)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/live",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "live"
+              ],
+              "query": []
+            },
+            "description": "Live score snapshot (score, CRR, target, RRR, batters, bowler, this over, partnership)"
+          },
+          "response": []
+        },
+        {
+          "name": "Full scorecard for every innings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/scorecard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "scorecard"
+              ],
+              "query": []
+            },
+            "description": "Full scorecard for every innings"
+          },
+          "response": []
+        },
+        {
+          "name": "Worm & Manhattan graph data per innings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/graphs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "graphs"
+              ],
+              "query": []
+            },
+            "description": "Worm & Manhattan graph data per innings"
+          },
+          "response": []
+        },
+        {
+          "name": "Ball log (incremental with afterSequence)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls"
+              ],
+              "query": [
+                {
+                  "key": "inningsNumber",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "afterSequence",
+                  "value": "",
+                  "description": "Only balls with sequence greater than this (incremental fetch)",
+                  "disabled": true
+                },
+                {
+                  "key": "includeDeleted",
+                  "value": "false",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Ball log (incremental with afterSequence)"
+          },
+          "response": []
+        },
+        {
+          "name": "Score a ball",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls"
+              ],
+              "query": []
+            },
+            "description": "Score a ball\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.\n\nExamples:\n- Dot: `{ \"runs\": 0 }`\n- Four: `{ \"runs\": 4 }`\n- Wide + 1 run: `{ \"runs\": 1, \"extraType\": \"WIDE\" }`\n- No-ball hit for six: `{ \"runs\": 6, \"extraType\": \"NO_BALL\" }`\n- Leg byes: `{ \"runs\": 2, \"extraType\": \"LEG_BYE\" }`\n- Caught: `{ \"runs\": 0, \"wicketType\": \"CAUGHT\", \"fielderId\": \"...\" }`\n- Run out of non-striker on 1st run: `{ \"runs\": 0, \"wicketType\": \"RUN_OUT\", \"dismissedPlayerId\": \"...\", \"fielderId\": \"...\" }`\n\nSend a client `id` (UUID) to make retries idempotent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{$guid}}\",\n  \"runs\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('ballId', d.ball.id);",
+                  "const c = d.snapshot.current;",
+                  "if (c) console.log(`${c.score} (${c.overs})  ${c.equation ?? ''}`, c.needsNewBatsman ? '→ set new batter' : '', c.needsNewBowler ? '→ change bowler' : '');",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resume interrupted match: snapshot, scorer status, active innings, last ball, squads and synced ball ids",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/resume-state",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "resume-state"
+              ],
+              "query": []
+            },
+            "description": "Resume interrupted match: snapshot, scorer status, active innings, last ball, squads and synced ball ids"
+          },
+          "response": []
+        },
+        {
+          "name": "Start match: acquires the scorer lock and opens innings 1 with openers & bowler",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "start"
+              ],
+              "query": []
+            },
+            "description": "Start match: acquires the scorer lock and opens innings 1 with openers & bowler\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strikerId\": \"{{strikerId}}\",\n  \"nonStrikerId\": \"{{nonStrikerId}}\",\n  \"bowlerId\": \"{{bowlerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start the next innings after an innings break (target is set automatically)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/innings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "innings"
+              ],
+              "query": []
+            },
+            "description": "Start the next innings after an innings break (target is set automatically)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strikerId\": \"{{strikerId}}\",\n  \"nonStrikerId\": \"{{nonStrikerId}}\",\n  \"bowlerId\": \"{{bowlerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "End the current innings (End Innings button)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/innings/end",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "innings",
+                "end"
+              ],
+              "query": []
+            },
+            "description": "End the current innings (End Innings button)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start a super over after a tie (team batting second bats first)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/super-over",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "super-over"
+              ],
+              "query": []
+            },
+            "description": "Start a super over after a tie (team batting second bats first)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strikerId\": \"{{strikerId}}\",\n  \"nonStrikerId\": \"{{nonStrikerId}}\",\n  \"bowlerId\": \"{{bowlerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause match (rain, bad light...)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/pause",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "pause"
+              ],
+              "query": []
+            },
+            "description": "Pause match (rain, bad light...)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume a paused match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/resume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "resume"
+              ],
+              "query": []
+            },
+            "description": "Resume a paused match",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Undo last ball (restores batters / bowler, re-opens an innings it had ended)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls/undo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls",
+                "undo"
+              ],
+              "query": []
+            },
+            "description": "Undo last ball (restores batters / bowler, re-opens an innings it had ended)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"reason\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Edit any ball (innings is replayed; audited with reason)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls/{{ballId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls",
+                "{{ballId}}"
+              ],
+              "query": []
+            },
+            "description": "Edit any ball (innings is replayed; audited with reason)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runs\": 4,\n  \"reason\": \"Scorer correction\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete any ball (innings is replayed; audited with reason)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls/{{ballId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls",
+                "{{ballId}}"
+              ],
+              "query": []
+            },
+            "description": "Delete any ball (innings is replayed; audited with reason)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Recorded twice\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Offline sync: upload balls recorded without internet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/balls/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "balls",
+                "sync"
+              ],
+              "query": []
+            },
+            "description": "Offline sync: upload balls recorded without internet\n\nBalls are applied in clientSequence order; ids already stored are reported as DUPLICATE; processing stops at the first REJECTED ball (later ones SKIPPED).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"balls\": [\n    {\n      \"id\": \"{{$guid}}\",\n      \"clientSequence\": 1,\n      \"inningsNumber\": 1,\n      \"runs\": 1,\n      \"strikerId\": \"{{strikerId}}\",\n      \"nonStrikerId\": \"{{nonStrikerId}}\",\n      \"bowlerId\": \"{{bowlerId}}\"\n    },\n    {\n      \"id\": \"{{$guid}}\",\n      \"clientSequence\": 2,\n      \"inningsNumber\": 1,\n      \"runs\": 4,\n      \"strikerId\": \"{{nonStrikerId}}\",\n      \"nonStrikerId\": \"{{strikerId}}\",\n      \"bowlerId\": \"{{bowlerId}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Award penalty runs to the batting side",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/penalty",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "penalty"
+              ],
+              "query": []
+            },
+            "description": "Award penalty runs to the batting side\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runs\": 5,\n  \"reason\": \"Ball hit fielding helmet\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retired hurt / timed out (not a delivery)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/dismissal",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "dismissal"
+              ],
+              "query": []
+            },
+            "description": "Retired hurt / timed out (not a delivery)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{strikerId}}\",\n  \"wicketType\": \"RETIRED_HURT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change striker (swap ends)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/strike/swap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "strike",
+                "swap"
+              ],
+              "query": []
+            },
+            "description": "Change striker (swap ends)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`."
+          },
+          "response": []
+        },
+        {
+          "name": "Set batters (new batter after a wicket, returning retired batter...)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/batsmen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "batsmen"
+              ],
+              "query": []
+            },
+            "description": "Set batters (new batter after a wicket, returning retired batter...)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strikerId\": \"{{strikerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change bowler (new over or mid-over replacement)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/bowler",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "bowler"
+              ],
+              "query": []
+            },
+            "description": "Change bowler (new over or mid-over replacement)\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bowlerId\": \"{{bowler2Id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "End over early (short over): swaps ends and asks for a new bowler",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/over/end",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "over",
+                "end"
+              ],
+              "query": []
+            },
+            "description": "End over early (short over): swaps ends and asks for a new bowler\n\nRequires the scorer lock (viewers get 403). Response contains the updated live snapshot, which is also broadcast on `score:updated`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Commentary",
+      "item": [
+        {
+          "name": "Ball-by-ball commentary (newest first by default). Filter by inningsNumber / types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/commentary?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "commentary"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "inningsNumber",
+                  "value": "",
+                  "description": "Filter by innings number (1, 2, 3 = super over...)",
+                  "disabled": true
+                },
+                {
+                  "key": "types",
+                  "value": "BALL",
+                  "description": "Comma separated, e.g. WICKET,SIX,BOUNDARY",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Ball-by-ball commentary (newest first by default). Filter by inningsNumber / types"
+          },
+          "response": []
+        },
+        {
+          "name": "Add a manual commentary line (active scorer or organizer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/commentary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "commentary"
+              ],
+              "query": []
+            },
+            "description": "Add a manual commentary line (active scorer or organizer)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Drinks break. Great contest so far.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a commentary line (organizer)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/commentary/{{commentaryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "commentary",
+                "{{commentaryId}}"
+              ],
+              "query": []
+            },
+            "description": "Delete a commentary line (organizer)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Statistics",
+      "item": [
+        {
+          "name": "Leaderboards (runs, wickets, sixes, fours, strikeRate, economy, catches, dismissals, mvp) scoped by tournament / season / ground / team",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/leaderboards?category=runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "leaderboards"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "runs",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "season",
+                  "value": "2026",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ground",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "teamId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Leaderboards (runs, wickets, sixes, fours, strikeRate, economy, catches, dismissals, mvp) scoped by tournament / season / ground / team"
+          },
+          "response": []
+        },
+        {
+          "name": "Player statistics: career batting / bowling / fielding + recent form",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/players/{{playerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            },
+            "description": "Player statistics: career batting / bowling / fielding + recent form"
+          },
+          "response": []
+        },
+        {
+          "name": "Player match-by-match statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/players/{{playerId}}/matches?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "players",
+                "{{playerId}}",
+                "matches"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Player match-by-match statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Team statistics: results, form, totals, top performers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/teams/{{teamId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "teams",
+                "{{teamId}}"
+              ],
+              "query": []
+            },
+            "description": "Team statistics: results, form, totals, top performers"
+          },
+          "response": []
+        },
+        {
+          "name": "Tournament statistics & leaderboards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/tournaments/{{tournamentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "tournaments",
+                "{{tournamentId}}"
+              ],
+              "query": []
+            },
+            "description": "Tournament statistics & leaderboards"
+          },
+          "response": []
+        },
+        {
+          "name": "Season statistics (all tournaments of a season)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/seasons/{{2026}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "seasons",
+                "{{2026}}"
+              ],
+              "query": []
+            },
+            "description": "Season statistics (all tournaments of a season)"
+          },
+          "response": []
+        },
+        {
+          "name": "Ground statistics (averages, bat-first win %, top performers)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/grounds?name=Marina Ground",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "grounds"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "Marina Ground",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Ground statistics (averages, bat-first win %, top performers)"
+          },
+          "response": []
+        },
+        {
+          "name": "Head-to-head record between two teams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/statistics/head-to-head?teamA={{teamId}}&teamB={{teamBId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "statistics",
+                "head-to-head"
+              ],
+              "query": [
+                {
+                  "key": "teamA",
+                  "value": "{{teamId}}",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "teamB",
+                  "value": "{{teamBId}}",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Head-to-head record between two teams"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Awards",
+      "item": [
+        {
+          "name": "Match awards: Man of the Match, best batsman / bowler / fielder, most sixes / fours, highest partnership",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/awards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "awards"
+              ],
+              "query": []
+            },
+            "description": "Match awards: Man of the Match, best batsman / bowler / fielder, most sixes / fours, highest partnership"
+          },
+          "response": []
+        },
+        {
+          "name": "Organizer override of a match award (e.g. MAN_OF_THE_MATCH)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/awards/{{MAN_OF_THE_MATCH}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "awards",
+                "{{MAN_OF_THE_MATCH}}"
+              ],
+              "query": []
+            },
+            "description": "Organizer override of a match award (e.g. MAN_OF_THE_MATCH)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{playerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove an override and recompute automatically",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/awards/{{MAN_OF_THE_MATCH}}/override",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "awards",
+                "{{MAN_OF_THE_MATCH}}",
+                "override"
+              ],
+              "query": []
+            },
+            "description": "Remove an override and recompute automatically"
+          },
+          "response": []
+        },
+        {
+          "name": "Tournament awards: Man of the Tournament, Orange / Purple cap, best batsman / bowler / all-rounder / fielder, records",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournaments/{{tournamentId}}/awards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournaments",
+                "{{tournamentId}}",
+                "awards"
+              ],
+              "query": []
+            },
+            "description": "Tournament awards: Man of the Tournament, Orange / Purple cap, best batsman / bowler / all-rounder / fielder, records"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Gallery",
+      "item": [
+        {
+          "name": "Upload a match photo (≤10 MB) or video (≤100 MB). Broadcasts gallery:update",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/gallery",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "gallery"
+              ],
+              "query": []
+            },
+            "description": "Upload a match photo (≤10 MB) or video (≤100 MB). Broadcasts gallery:update",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image / video file"
+                },
+                {
+                  "key": "caption",
+                  "type": "text",
+                  "value": "",
+                  "description": "Optional caption"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('galleryId', pm.response.json().data.id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Match gallery (photos & videos)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/gallery?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "gallery"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "PHOTO",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Match gallery (photos & videos)"
+          },
+          "response": []
+        },
+        {
+          "name": "Edit caption (uploader / organizer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/gallery/{{galleryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "gallery",
+                "{{galleryId}}"
+              ],
+              "query": []
+            },
+            "description": "Edit caption (uploader / organizer)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"caption\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete media (uploader / organizer)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/gallery/{{galleryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "gallery",
+                "{{galleryId}}"
+              ],
+              "query": []
+            },
+            "description": "Delete media (uploader / organizer)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Scorecard Export",
+      "item": [
+        {
+          "name": "Full scorecard PDF (footer: Developed by Sling Groups)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/export/scorecard.pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "export",
+                "scorecard.pdf"
+              ],
+              "query": []
+            },
+            "description": "Full scorecard PDF (footer: Developed by Sling Groups)"
+          },
+          "response": []
+        },
+        {
+          "name": "One-page match summary PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/export/summary.pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "export",
+                "summary.pdf"
+              ],
+              "query": []
+            },
+            "description": "One-page match summary PDF"
+          },
+          "response": []
+        },
+        {
+          "name": "Scorecard image (PNG)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/export/scorecard.png",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "export",
+                "scorecard.png"
+              ],
+              "query": []
+            },
+            "description": "Scorecard image (PNG)"
+          },
+          "response": []
+        },
+        {
+          "name": "WhatsApp share image (1080×1080 PNG)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/export/share.png",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "export",
+                "share.png"
+              ],
+              "query": []
+            },
+            "description": "WhatsApp share image (1080×1080 PNG)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "My notifications (meta.unread = unread count)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "unreadOnly",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "MATCH_STARTED",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "My notifications (meta.unread = unread count)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const n = pm.response.json().data; if (n.length) pm.collectionVariables.set('notificationId', n[0].id);",
+                  "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark a notification as read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ],
+              "query": []
+            },
+            "description": "Mark a notification as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark all notifications as read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "read-all"
+              ],
+              "query": []
+            },
+            "description": "Mark all notifications as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Register an FCM device token for push notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "devices"
+              ],
+              "query": []
+            },
+            "description": "Register an FCM device token for push notifications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unregister a device token (on logout)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/devices/{{fcmToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "devices",
+                "{{fcmToken}}"
+              ],
+              "query": []
+            },
+            "description": "Unregister a device token (on logout)"
+          },
+          "response": []
+        },
+        {
+          "name": "Follow a match/tournament/team: subscribe my devices to its push topic",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/topics/subscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "topics",
+                "subscribe"
+              ],
+              "query": []
+            },
+            "description": "Follow a match/tournament/team: subscribe my devices to its push topic",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"match_2b0c6f0e-0000-0000-0000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unfollow a push topic",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/topics/unsubscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "topics",
+                "unsubscribe"
+              ],
+              "query": []
+            },
+            "description": "Unfollow a push topic",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"match_2b0c6f0e-0000-0000-0000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "File Upload",
+      "item": [
+        {
+          "name": "Upload an image (JPEG/PNG/WEBP/GIF ≤ 10 MB, content-sniffed). Local disk or S3-compatible storage.",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/uploads/images?kind=team-logo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "uploads",
+                "images"
+              ],
+              "query": [
+                {
+                  "key": "kind",
+                  "value": "team-logo",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Upload an image (JPEG/PNG/WEBP/GIF ≤ 10 MB, content-sniffed). Local disk or S3-compatible storage.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image / video file"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Audit Logs",
+      "item": [
+        {
+          "name": "Search audit logs (Super Admin: all, Organizer: own matches only via matchId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/audit-logs?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "matchId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "entityType",
+                  "value": "BALL",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "entityId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "UPDATE",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search audit logs (Super Admin: all, Organizer: own matches only via matchId)"
+          },
+          "response": []
+        },
+        {
+          "name": "Audit history of a match (organizer / match owner)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matches/{{matchId}}/audit-logs?",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matches",
+                "{{matchId}}",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Free-text search",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "description": "Field to sort by (see endpoint for allowed values)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "matchId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "entityType",
+                  "value": "BALL",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "entityId",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "UPDATE",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Audit history of a match (organizer / match owner)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Liveness / readiness probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            },
+            "description": "Liveness / readiness probe",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
