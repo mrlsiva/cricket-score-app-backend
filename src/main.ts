@@ -44,7 +44,14 @@ async function bootstrap() {
   const prefix = config.get<string>('apiPrefix')!;
 
   app.set('trust proxy', 1);
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, contentSecurityPolicy: false }));
+  // COOP must allow popups, otherwise the Google Sign-In popup can't post the credential back
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+      contentSecurityPolicy: false,
+    }),
+  );
   app.use((_req: unknown, res: { setHeader: (k: string, v: string) => void }, next: () => void) => {
     res.setHeader('X-Developed-By', 'Sling Groups');
     next();
